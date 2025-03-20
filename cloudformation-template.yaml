@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation Template for EKS
+
+Parameters:
+  Param1:
+    Type: String
+    Default: "value1"
+  Param2:
+    Type: String
+    Default: "value2"
+
+Resources:
+  MyEKSCluster:
+    Type: AWS::EKS::Cluster
+    Properties: 
+      Name: "nikhil-eks-cluster"
+      RoleArn: !Ref EKSClusterRole
+      ResourcesVpcConfig:
+        SubnetIds:
+          - !Ref Subnet1
+          - !Ref Subnet2
+
+Outputs:
+  ClusterName:
+    Value: !Ref MyEKSCluster
+    Description: EKS Cluster Name
