@@ -4,7 +4,6 @@ provider "aws" {
 
 resource "aws_vpc" "nikhil_vpc" {
   cidr_block = "10.0.0.0/16"
-
   tags = {
     Name = "nikhil-vpc"
   }
@@ -16,7 +15,6 @@ resource "aws_subnet" "nikhil_subnet" {
   cidr_block              = cidrsubnet(aws_vpc.nikhil_vpc.cidr_block, 8, count.index)
   availability_zone       = element(["ap-south-1a", "ap-south-1b"], count.index)
   map_public_ip_on_launch = true
-
   tags = {
     Name = "nikhil-subnet-${count.index}"
   }
@@ -24,7 +22,6 @@ resource "aws_subnet" "nikhil_subnet" {
 
 resource "aws_internet_gateway" "nikhil_igw" {
   vpc_id = aws_vpc.nikhil_vpc.id
-
   tags = {
     Name = "nikhil-igw"
   }
@@ -32,12 +29,10 @@ resource "aws_internet_gateway" "nikhil_igw" {
 
 resource "aws_route_table" "nikhil_route_table" {
   vpc_id = aws_vpc.nikhil_vpc.id
-
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.nikhil_igw.id
   }
-
   tags = {
     Name = "nikhil-route-table"
   }
@@ -51,14 +46,12 @@ resource "aws_route_table_association" "a" {
 
 resource "aws_security_group" "nikhil_cluster_sg" {
   vpc_id = aws_vpc.nikhil_vpc.id
-
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   tags = {
     Name = "nikhil-cluster-sg"
   }
@@ -66,21 +59,18 @@ resource "aws_security_group" "nikhil_cluster_sg" {
 
 resource "aws_security_group" "nikhil_node_sg" {
   vpc_id = aws_vpc.nikhil_vpc.id
-
   ingress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   tags = {
     Name = "nikhil-node-sg"
   }
@@ -89,7 +79,6 @@ resource "aws_security_group" "nikhil_node_sg" {
 resource "aws_eks_cluster" "nikhil" {
   name     = "nikhil-cluster"
   role_arn = aws_iam_role.nikhil_cluster_role.arn
-
   vpc_config {
     subnet_ids         = aws_subnet.nikhil_subnet[*].id
     security_group_ids = [aws_security_group.nikhil_cluster_sg.id]
@@ -101,15 +90,12 @@ resource "aws_eks_node_group" "nikhil" {
   node_group_name = "nikhil-node-group"
   node_role_arn   = aws_iam_role.nikhil_node_group_role.arn
   subnet_ids      = aws_subnet.nikhil_subnet[*].id
-
   scaling_config {
     desired_size = 3
     max_size     = 3
     min_size     = 3
   }
-
   instance_types = ["t2.medium"]
-
   remote_access {
     ec2_ssh_key = var.ssh_key_name
     source_security_group_ids = [aws_security_group.nikhil_node_sg.id]
@@ -118,7 +104,6 @@ resource "aws_eks_node_group" "nikhil" {
 
 resource "aws_iam_role" "nikhil_cluster_role" {
   name = "nikhil-cluster-role"
-
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -142,7 +127,6 @@ resource "aws_iam_role_policy_attachment" "nikhil_cluster_role_policy" {
 
 resource "aws_iam_role" "nikhil_node_group_role" {
   name = "nikhil-node-group-role"
-
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -172,4 +156,17 @@ resource "aws_iam_role_policy_attachment" "nikhil_node_group_cni_policy" {
 resource "aws_iam_role_policy_attachment" "nikhil_node_group_registry_policy" {
   role       = aws_iam_role.nikhil_node_group_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+# CloudFormation Stack Resource
+resource "aws_cloudformation_stack" "nikhil_cloudformation_stack" {
+  name          = "nikhil-cloudformation-stack"
+  template_body = file("cloudformation-template.yaml")  # Add your CloudFormation template file here
+  parameters = {
+    Param1 = "value1"
+    Param2 = "value2"
+  }
+  tags = {
+    Name = "nikhil-cloudformation-stack"
+  }
 }
